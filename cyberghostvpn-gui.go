@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -22,14 +23,18 @@ func setConnectionLabel(statusLabel *widget.Label, c *models.Country, server str
 	}
 }
 
-func disconnect(statusButton *widget.Button, statusLabel *widget.Label) {
+func disconnect(statusButton *widget.Button, statusLabel *widget.Label, loader *dialog.CustomDialog) {
+	loader.Show()
 	commander.Disconnect()
+	loader.Hide()
 	statusButton.Disable()
 	setConnectionLabel(statusLabel, nil, "")
 }
 
-func connect(statusButton *widget.Button, statusLabel *widget.Label, c *models.Country) {
+func connect(statusButton *widget.Button, statusLabel *widget.Label, loader *dialog.CustomDialog, c *models.Country) {
+	loader.Show()
 	server, _ := commander.Connect(c)
+	loader.Hide()
 	statusButton.Enable()
 	setConnectionLabel(statusLabel, c, server)
 }
@@ -39,12 +44,14 @@ func main() {
 	myWindow := a.NewWindow("CyberGhost GUI")
 	myWindow.Resize(fyne.NewSize(400, 600))
 
+	// Loader dialog to block interaction
+	loader := dialog.NewCustomWithoutButtons("", widget.NewLabel("Loading..."), myWindow)
 	// Status component
 	statusButton := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {})
 	statusButton.Disable()
 	statusLabel := widget.NewLabel("Disconnected")
 	statusButton.OnTapped = func() {
-		disconnect(statusButton, statusLabel)
+		disconnect(statusButton, statusLabel, loader)
 	}
 	statusComponent := container.NewHBox(
 		statusButton,
@@ -70,7 +77,7 @@ func main() {
 			country := c.(models.Country)
 			o.(*fyne.Container).Objects[0].(*widget.Label).SetText(country.String())
 			o.(*fyne.Container).Objects[2].(*widget.Button).OnTapped = func() {
-				connect(statusButton, statusLabel, &country)
+				connect(statusButton, statusLabel, loader, &country)
 			}
 		},
 	)
