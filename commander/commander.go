@@ -40,3 +40,14 @@ func GetCountryList() ([]models.Country, error) {
 
 	return countryList, nil
 }
+
+func Connect(c *models.Country) (string, error) {
+	// TODO
+
+	return "Server 1", nil
+}
+
+func Disconnect() error {
+	// TODO
+	return nil
+}

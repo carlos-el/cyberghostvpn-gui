@@ -12,10 +12,44 @@ import (
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
 
+func setConnectionLabel(statusLabel *widget.Label, c *models.Country, server string) {
+	if server == "" {
+		statusLabel.SetText("Disconnected")
+	} else if c == nil {
+		statusLabel.SetText("Connected to: " + server)
+	} else {
+		statusLabel.SetText("Connected to: " + server + " - " + c.String())
+	}
+}
+
+func disconnect(statusButton *widget.Button, statusLabel *widget.Label) {
+	commander.Disconnect()
+	statusButton.Disable()
+	setConnectionLabel(statusLabel, nil, "")
+}
+
+func connect(statusButton *widget.Button, statusLabel *widget.Label, c *models.Country) {
+	server, _ := commander.Connect(c)
+	statusButton.Enable()
+	setConnectionLabel(statusLabel, c, server)
+}
+
 func main() {
 	a := app.New()
 	myWindow := a.NewWindow("CyberGhost GUI")
 	myWindow.Resize(fyne.NewSize(400, 600))
+
+	// Status component
+	statusButton := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {})
+	statusButton.Disable()
+	statusLabel := widget.NewLabel("Disconnected")
+	statusButton.OnTapped = func() {
+		disconnect(statusButton, statusLabel)
+	}
+	statusComponent := container.NewHBox(
+		statusButton,
+		statusLabel,
+	)
 
 	// Get data
 	var countries, _ = commander.GetCountryList()
@@ -28,15 +62,16 @@ func main() {
 	list := widget.NewListWithData(
 		countryList,
 		func() fyne.CanvasObject {
-			b := widget.NewButton("", func() {
-			})
-			b.SetIcon(theme.LoginIcon())
-			b.Disable()
+			b := widget.NewButtonWithIcon("", theme.LoginIcon(), func() {})
 			return container.NewHBox(widget.NewLabel("template"), layout.NewSpacer(), b)
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
-			country, _ := i.(binding.Untyped).Get()
-			o.(*fyne.Container).Objects[0].(*widget.Label).SetText(country.(models.Country).Name)
+			c, _ := i.(binding.Untyped).Get()
+			country := c.(models.Country)
+			o.(*fyne.Container).Objects[0].(*widget.Label).SetText(country.String())
+			o.(*fyne.Container).Objects[2].(*widget.Button).OnTapped = func() {
+				connect(statusButton, statusLabel, &country)
+			}
 		},
 	)
 
@@ -47,19 +82,6 @@ func main() {
 		nil,       // Left
 		nil,       // Right
 		list,      // Rest
-	)
-
-	// Status component
-	statusButton := widget.NewButton("", func() {
-	})
-	statusButton.SetIcon(theme.CancelIcon())
-	statusButton.Disable()
-
-	statusText := widget.NewLabel("Disconnected")
-
-	statusComponent := container.NewHBox(
-		statusButton,
-		statusText,
 	)
 
 	// Main component
