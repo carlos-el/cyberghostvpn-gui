@@ -20,7 +20,7 @@ func countryListParser(stringTable string) ([]models.Country, error) {
 		countryNumber, err := strconv.Atoi(strings.TrimSpace(aux[1]))
 		if err != nil {
 			return []models.Country{}, &ErrCommandParse{
-				Msg:  "in countryListParser, could not parse country code",
+				Msg:  "in commander countryListParser, could not parse country code",
 				Text: stringTable,
 				Err:  err,
 			}
@@ -45,7 +45,7 @@ func parseServerFromConnectMsg(msg string) (string, error) {
 	matched, err := regexp.MatchString(ServerNameRegex, server)
 	if !matched || err != nil {
 		return "", &ErrCommandParse{
-			Msg:  "in parseServerFromConnectMsg, server name could not be parsed",
+			Msg:  "in commander parseServerFromConnectMsg, server name could not be parsed",
 			Text: msg,
 			Err:  err,
 		}
