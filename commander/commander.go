@@ -2,52 +2,59 @@ package commander
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
-	"strconv"
-	"strings"
 
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
-
-func countryListParser(stringTable string) []models.Country {
-	list := make([]models.Country, 0)
-	// Split the table by line jumps
-	stringList := strings.Split(stringTable, "\n")
-	// For each row with countries get them correctly by splitting and trimming the chars and add them to the list
-	for i := 3; i < len(stringList)-2; i++ {
-		aux := strings.Split(stringList[i], "|")
-		countryNumber, _ := strconv.Atoi(strings.TrimSpace(aux[1]))
-
-		country := models.Country{
-			Number: countryNumber,
-			Name:   strings.TrimSpace(aux[2]),
-			Code:   strings.TrimSpace(aux[3]),
-		}
-		list = append(list, country)
-	}
-
-	return list
-}
 
 func GetCountryList() ([]models.Country, error) {
 	cmd := exec.Command("cyberghostvpn", "--traffic", "--country-code")
 	out, err := cmd.Output()
 	if err != nil {
-		return make([]models.Country, 0), fmt.Errorf("could not run command: %w", err)
+		return []models.Country{}, &ErrCommandSysExecution{Msg: "in GetCountryList, could not run command", Err: err}
 	}
+	log.Print(string(out))
 
-	countryList := countryListParser(string(out))
+	countryList, parseErr := countryListParser(string(out))
+	if parseErr != nil {
+		return []models.Country{}, fmt.Errorf("in func GetCountryList: %w", parseErr)
+	}
 
 	return countryList, nil
 }
 
 func Connect(c *models.Country) (string, error) {
-	// TODO
+	cmd := exec.Command("/bin/sh", "-c", "cyberghostvpn --traffic --country-code "+c.Code+" --connect")
+	out, cmdErr := cmd.Output()
+	if cmdErr != nil {
+		return "", &ErrCommandSysExecution{Msg: "in Connect, could not run command", Err: cmdErr}
+	}
 
-	return "Server 1", nil
+	sudoErr := DetectErrSudoRequiredInMsg(string(out))
+	if sudoErr != nil {
+		return "", sudoErr
+	}
+
+	log.Print(string(out))
+	server, parseErr := parseServerFromConnectMsg(string(out))
+	if parseErr != nil {
+		return "", fmt.Errorf("in func Connect: %w", parseErr)
+	}
+
+	return server, nil
 }
 
 func Disconnect() error {
-	// TODO
+	cmd := exec.Command("/bin/sh", "-c", "cyberghostvpn --stop")
+	out, err := cmd.Output()
+	if err != nil {
+		log.Fatal("func Disconnect could not run command: ", err)
+	}
+	sudoErr := DetectErrSudoRequiredInMsg(string(out))
+	if sudoErr != nil {
+		return sudoErr
+	}
+	log.Print(string(out))
 	return nil
 }
