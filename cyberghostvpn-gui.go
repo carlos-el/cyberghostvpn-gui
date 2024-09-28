@@ -17,17 +17,7 @@ import (
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
 
-func setConnectionLabel(statusLabel *widget.Label, c *models.Country, server string) {
-	if server == "" {
-		statusLabel.SetText("Disconnected")
-	} else if c == nil {
-		statusLabel.SetText("Connected to: " + server)
-	} else {
-		statusLabel.SetText("Connected to: " + server + " - " + c.String())
-	}
-}
-
-func disconnect(statusButton *widget.Button, statusLabel *widget.Label, loader *dialog.CustomDialog) error {
+func disconnect(loader *dialog.CustomDialog) error {
 	loader.Show()
 	defer loader.Hide()
 
@@ -36,12 +26,10 @@ func disconnect(statusButton *widget.Button, statusLabel *widget.Label, loader *
 		return fmt.Errorf("could not disconnect: %w", err)
 	}
 
-	statusButton.Disable()
-	setConnectionLabel(statusLabel, nil, "")
 	return nil
 }
 
-func connect(statusButton *widget.Button, statusLabel *widget.Label, loader *dialog.CustomDialog, c *models.Country) error {
+func connect(status *components.ConnectionStatus, loader *dialog.CustomDialog, c *models.Country) error {
 	loader.Show()
 	defer loader.Hide()
 
@@ -50,8 +38,7 @@ func connect(statusButton *widget.Button, statusLabel *widget.Label, loader *dia
 		return fmt.Errorf("could not connect: %w", err)
 	}
 
-	statusButton.Enable()
-	setConnectionLabel(statusLabel, c, server)
+	status.SetConnected(c, server)
 	return nil
 }
 
@@ -65,20 +52,8 @@ func main() {
 	// Loader dialog to block interaction
 	loader := dialog.NewCustomWithoutButtons("", widget.NewLabel("Loading..."), myWindow)
 	// Status component
-	statusButton := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
-		// Defined later
-	})
-	statusButton.Disable()
-	statusLabel := widget.NewLabel("Disconnected")
-	statusButton.OnTapped = func() {
-		err := disconnect(statusButton, statusLabel, loader)
-		if err != nil {
-			errorDialog.Show(err)
-		}
-	}
-	statusComponent := container.NewHBox(
-		statusButton,
-		statusLabel,
+	connectionStatusComponent := components.NewConnectionStatus(
+		func() { disconnect(loader) },
 	)
 
 	// Get data
@@ -108,7 +83,7 @@ func main() {
 			country := c.(models.Country)
 			o.(*fyne.Container).Objects[0].(*widget.Label).SetText(country.String())
 			o.(*fyne.Container).Objects[2].(*widget.Button).OnTapped = func() {
-				errCon := connect(statusButton, statusLabel, loader, &country)
+				errCon := connect(connectionStatusComponent, loader, &country)
 				if errCon != nil {
 					errorDialog.Show(errCon)
 				}
@@ -127,11 +102,11 @@ func main() {
 
 	// Main component
 	mainComp := container.NewBorder(
-		statusComponent,      // Top
-		nil,                  // Bottom
-		nil,                  // Left
-		nil,                  // Right
-		serviceListComponent, // Rest
+		connectionStatusComponent.Container, // Top
+		nil,                                 // Bottom
+		nil,                                 // Left
+		nil,                                 // Right
+		serviceListComponent,                // Rest
 	)
 
 	myWindow.SetContent(mainComp)
