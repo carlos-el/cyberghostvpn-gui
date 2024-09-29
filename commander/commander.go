@@ -8,8 +8,8 @@ import (
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
 
-func GetCountryList() ([]models.Country, error) {
-	cmd := exec.Command("cyberghostvpn", "--traffic", "--country-code")
+func GetCountryList(srvOpt ServiceType) ([]models.Country, error) {
+	cmd := exec.Command("cyberghostvpn", "--"+srvOpt.String(), "--country-code")
 	out, err := cmd.Output()
 	if err != nil {
 		return []models.Country{}, &ErrCommandSysExecution{Msg: "in commander GetCountryList, could not run command", Err: err}
@@ -24,11 +24,19 @@ func GetCountryList() ([]models.Country, error) {
 	return countryList, nil
 }
 
-func Connect(c *models.Country) (string, error) {
-	cmd := exec.Command("/bin/sh", "-c", "cyberghostvpn --traffic --country-code "+c.Code+" --connect")
+func Connect(c *models.Country, vpnOpt VpnProtocol, transOpt TransmissionProtocol, srvOpt ServiceType) (string, error) {
+	command := fmt.Sprintf(
+		"cyberghostvpn --%s --country-code %s --%s --%s --connect",
+		srvOpt.CommandArg(),
+		c.Code,
+		vpnOpt.CommandArg(),
+		transOpt.CommandArg(),
+	)
+	log.Print(command)
+	cmd := exec.Command("/bin/sh", "-c", command)
 	out, cmdErr := cmd.Output()
 	if cmdErr != nil {
-		return "", &ErrCommandSysExecution{Msg: "in commander Connect, could not run command", Err: cmdErr}
+		return "", &ErrCommandSysExecution{Msg: "in commander Connect, could not run command: " + command, Err: cmdErr}
 	}
 
 	sudoErr := DetectErrSudoRequiredInMsg(string(out))
