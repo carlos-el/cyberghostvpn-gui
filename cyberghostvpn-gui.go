@@ -51,7 +51,9 @@ func connect(
 	return nil
 }
 
-func GetServerList(serviceType commander.ServiceType, errorDialog *components.ErrorDialog) []models.Country {
+func GetServerList(serviceType commander.ServiceType, errorDialog *components.ErrorDialog, loader *dialog.CustomDialog) []models.Country {
+	loader.Show()
+	defer loader.Hide()
 	var countries, err = commander.GetCountryList(serviceType)
 	if err != nil {
 		errorDialog.Show(err)
@@ -87,8 +89,9 @@ func main() {
 	inputServiceType := widget.NewSelect(serviceTypeOptions, nil)
 	inputServiceType.SetSelected(serviceTypeOptions[0])
 
+	// Server list array
+	serverList := GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
 	// Service list component
-	serverList := GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog)
 	list := widget.NewList(
 		func() int {
 			return len(serverList)
@@ -123,7 +126,7 @@ func main() {
 	// Update service list on service type change
 	inputServiceType.OnChanged = func(s string) {
 		log.Print("Changed selected service type: ", s)
-		serverList = GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog)
+		serverList = GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
 		list.Refresh()
 	}
 

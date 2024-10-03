@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"sort"
 
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
@@ -20,6 +21,10 @@ func GetCountryList(srvOpt ServiceType) ([]models.Country, error) {
 	if parseErr != nil {
 		return []models.Country{}, fmt.Errorf("in commander GetCountryList: %w", parseErr)
 	}
+
+	sort.Slice(countryList, func(i, j int) bool {
+		return countryList[i].Name < countryList[j].Name
+	})
 
 	return countryList, nil
 }
