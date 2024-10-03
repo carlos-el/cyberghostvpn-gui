@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,8 +18,30 @@ import (
 
 	"github.com/carlos-el/cyberghostvpn-gui/commander"
 	"github.com/carlos-el/cyberghostvpn-gui/components"
+	"github.com/carlos-el/cyberghostvpn-gui/debounce"
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
+
+func filterCountries(countries *[]models.Country, filter string) []models.Country {
+	var result = []models.Country{}
+	for _, country := range *countries {
+		if strings.Contains(strings.ToLower(country.String()), strings.ToLower(filter)) {
+			result = append(result, country)
+		}
+	}
+
+	return result
+}
+
+func applyFilterToServerList(
+	inputList *[]models.Country,
+	outputList *[]models.Country,
+	list *widget.List,
+	filter string,
+) {
+	*outputList = filterCountries(inputList, filter)
+	list.Refresh()
+}
 
 func disconnect(loader *dialog.CustomDialog) error {
 	loader.Show()
@@ -89,12 +113,16 @@ func main() {
 	inputServiceType := widget.NewSelect(serviceTypeOptions, nil)
 	inputServiceType.SetSelected(serviceTypeOptions[0])
 
+	// Search selector
+	inputSearch := components.NewInputSearch()
+
 	// Server list array
-	serverList := GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
+	fullServerList := GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
+	filteredServerList := fullServerList
 	// Service list component
 	list := widget.NewList(
 		func() int {
-			return len(serverList)
+			return len(filteredServerList)
 		},
 		func() fyne.CanvasObject {
 			b := widget.NewButtonWithIcon("", theme.LoginIcon(), func() {
@@ -103,7 +131,7 @@ func main() {
 			return container.NewHBox(widget.NewLabel("template"), layout.NewSpacer(), b)
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			country := serverList[i]
+			country := filteredServerList[i]
 			o.(*fyne.Container).Objects[0].(*widget.Label).SetText(country.String())
 			o.(*fyne.Container).Objects[2].(*widget.Button).OnTapped = func() {
 				errCon := connect(
@@ -126,14 +154,23 @@ func main() {
 	// Update service list on service type change
 	inputServiceType.OnChanged = func(s string) {
 		log.Print("Changed selected service type: ", s)
-		serverList = GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
+		fullServerList = GetServerList(commander.ServiceType(inputServiceType.SelectedIndex()+1), errorDialog, loader)
+		applyFilterToServerList(&fullServerList, &filteredServerList, list, inputSearch.GetInputText())
 		list.Refresh()
 	}
+
+	// Update service list on search input
+	debounced, _ := debounce.NewDebounce(300*time.Millisecond, func() {
+		applyFilterToServerList(&fullServerList, &filteredServerList, list, inputSearch.GetInputText())
+	})
+	inputSearch.SetOnChanged(func(s string) {
+		debounced()
+	})
 
 	// List component
 	listTitle := widget.NewRichTextFromMarkdown("### Select a server to connect to: ")
 	serviceListComponent := container.NewBorder(
-		container.NewVBox(listTitle, inputServiceType), // Top
+		container.NewVBox(listTitle, inputServiceType, inputSearch.Container), // Top
 		nil,  // Bottom
 		nil,  // Left
 		nil,  // Right
