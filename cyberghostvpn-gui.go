@@ -125,9 +125,7 @@ func main() {
 			return len(filteredServerList)
 		},
 		func() fyne.CanvasObject {
-			b := widget.NewButtonWithIcon("", theme.LoginIcon(), func() {
-				// Defined later
-			})
+			b := widget.NewButtonWithIcon("", theme.LoginIcon(), nil)
 			return container.NewHBox(widget.NewLabel("template"), layout.NewSpacer(), b)
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {

@@ -16,7 +16,11 @@ type ConnectionOptionsSelector struct {
 
 func NewConnectionOptions() *ConnectionOptionsSelector {
 	connectionOptionsHeaderText := widget.NewRichTextFromMarkdown("### Connection options: ")
-	vpnProtocolOptions := []string{commander.OpenVpn.String(), commander.WireGuard.String()}
+	vpnProtocolOptions := []string{
+		commander.OpenVpn.String(),
+		// Wireguard deactivated because it does not in the current CyberghostVPN CLI version
+		// commander.WireGuard.String()
+	}
 	inputVpnProtocol := widget.NewSelect(vpnProtocolOptions, nil)
 	inputVpnProtocol.SetSelected(vpnProtocolOptions[0])
 	transmissionProtocolOptions := []string{commander.Tcp.String(), commander.Udp.String()}
