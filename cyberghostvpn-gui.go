@@ -175,6 +175,15 @@ func main() {
 		list, // Rest
 	)
 
+	// Check if connection to server already in place
+	isConnected, err := commander.CheckConnection()
+	if err != nil {
+		errorDialog.Show(err)
+	}
+	if isConnected {
+		connectionStatusComponent.SetConnected(nil, "Unknown")
+	}
+
 	// Main component
 	mainComp := container.NewBorder(
 		container.NewVBox(

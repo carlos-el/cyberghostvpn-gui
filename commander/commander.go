@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"sort"
+	"strings"
 
 	"github.com/carlos-el/cyberghostvpn-gui/models"
 )
@@ -73,4 +74,21 @@ func Disconnect() error {
 	}
 	log.Print(string(out))
 	return nil
+}
+
+func CheckConnection() (bool, error) {
+	cmd := exec.Command("cyberghostvpn", "--status")
+	log.Print(cmd)
+	out, err := cmd.Output()
+	if err != nil {
+		return false, &ErrCommandSysExecution{Msg: "in commander CheckConnection, could not run command", Err: err}
+	}
+
+	outText := string(out)
+	log.Print(outText)
+
+	if strings.HasPrefix(outText, "No VPN") {
+		return false, nil
+	}
+	return true, nil
 }
