@@ -10,7 +10,8 @@ import (
 )
 
 func GetCountryList(srvOpt ServiceType) ([]models.Country, error) {
-	cmd := exec.Command("cyberghostvpn", "--"+srvOpt.String(), "--country-code")
+	cmd := exec.Command("cyberghostvpn", "--"+srvOpt.CommandArg(), "--country-code")
+	log.Print(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return []models.Country{}, &ErrCommandSysExecution{Msg: "in commander GetCountryList, could not run command", Err: err}
@@ -59,7 +60,9 @@ func Connect(c *models.Country, vpnOpt VpnProtocol, transOpt TransmissionProtoco
 }
 
 func Disconnect() error {
-	cmd := exec.Command("/bin/sh", "-c", "cyberghostvpn --stop")
+	command := "cyberghostvpn --stop"
+	cmd := exec.Command("/bin/sh", "-c", command)
+	log.Print(command)
 	out, err := cmd.Output()
 	if err != nil {
 		return &ErrCommandSysExecution{Msg: "in commander Disconnect, could not run command", Err: err}

@@ -14,8 +14,13 @@ func countryListParser(stringTable string) ([]models.Country, error) {
 	list := make([]models.Country, 0)
 	// Split the table by line jumps
 	stringList := strings.Split(stringTable, "\n")
+	// If the command comes with an additional line at the beginning for auth the start parsing one line after it
+	dataStartLine := 3
+	if strings.Contains(stringList[0], "Perform") {
+		dataStartLine = 4
+	}
 	// For each row with countries get them correctly by splitting and trimming the chars and add them to the list
-	for i := 3; i < len(stringList)-2; i++ {
+	for i := dataStartLine; i < len(stringList)-2; i++ {
 		aux := strings.Split(stringList[i], "|")
 		countryNumber, err := strconv.Atoi(strings.TrimSpace(aux[1]))
 		if err != nil {
